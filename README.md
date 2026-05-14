@@ -1,195 +1,110 @@
-<p align="center">
-  <img src="assets/icon.png" alt="image-understand" width="120" />
-</p>
+# image-understand-skill
 
-<h1 align="center">image-understand-skill</h1>
+基于阿里云通义千问视觉模型的 Claude Code 图片理解技能。
 
-<p align="center">
-  <em>Multi-provider image understanding for Claude Code</em>
-</p>
+## 功能特性
 
-<p align="center">
-  <a href="#-features">Features</a> •
-  <a href="#-supported-providers">Providers</a> •
-  <a href="#-quick-start">Quick Start</a> •
-  <a href="#-usage">Usage</a> •
-  <a href="#-configuration">Configuration</a> •
-  <a href="#-extending">Extending</a>
-</p>
+- 自然语言描述和分析图片内容
+- 支持本地文件和网络 URL
+- 支持 JPEG、PNG、GIF、WebP、BMP 格式
+- 图片文字提取（OCR）
+- 多图对比分析
+- 支持 `qwen3.5-omni-flash`、`qwen-vl-max`、`qwen-vl-plus` 等模型
 
----
+## 快速开始
 
-Analyze images using **any** major vision model — OpenAI GPT-4o, Anthropic Claude,
-Google Gemini, Alibaba Cloud Qwen, or local models via Ollama. Provider is
-auto-detected from your environment variables.
+### 第一步：开通阿里云百炼服务
 
-## ✨ Features
+1. 注册/登录 [阿里云](https://www.aliyun.com/) 账号
+2. 前往 [百炼控制台](https://dashscope.console.aliyun.com/) 开通模型服务
+3. 进入「API Key 管理」，创建一个 API Key（`sk-` 开头）
+4. 确保账户有可用额度
 
-- **Multi-provider** — Bring your own API key, use your preferred model
-- **Auto-detection** — No need to specify a provider; the tool picks the first available API key
-- **Local & remote images** — Supports file paths and HTTP URLs
-- **Multi-image** — Compare multiple images in a single request
-- **Extensible** — Add a new provider in ~50 lines of Python
-- **Unified CLI** — Same command-line interface regardless of backend
-
-## 🎯 Supported Providers
-
-| Provider | Env Variable | Default Model | SDK |
-|----------|-------------|---------------|-----|
-| **OpenAI** | `OPENAI_API_KEY` | `gpt-4o` | `openai` |
-| **Anthropic** | `ANTHROPIC_API_KEY` | `claude-3-5-sonnet-20241022` | `anthropic` |
-| **Google Gemini** | `GOOGLE_API_KEY` | `gemini-1.5-flash` | `google-generativeai` |
-| **Alibaba Cloud (Qwen)** | `DASHSCOPE_API_KEY` | `qwen3.5-omni-flash` | `openai` (compatible) |
-| **Ollama** (local) | `OLLAMA_HOST` | `llava` | `openai` (compatible) |
-
-## 🚀 Quick Start
-
-### 1. Install
-
-Clone the skill to your Claude Code skills directory:
+### 第二步：安装 Python 依赖
 
 ```bash
-git clone https://github.com/Dloading666/image-understand-skill.git \
-  ~/.claude/skills/image-understand
-```
-
-### 2. Install dependencies
-
-```bash
-# Core dependency (always needed)
 pip install openai
-
-# Optional — for specific providers:
-pip install anthropic       # Only if using Anthropic
-pip install google-generativeai  # Only if using Google Gemini
 ```
 
-### 3. Configure API key
+### 第三步：配置 API Key
 
-Set **at least one** API key in `~/.claude/settings.json`:
+**推荐（永久生效）：** 编辑 `~/.claude/settings.json`：
 
 ```json
 {
   "env": {
-    "OPENAI_API_KEY": "sk-...",
-    "ANTHROPIC_API_KEY": "sk-ant-...",
-    "GOOGLE_API_KEY": "AIza...",
-    "DASHSCOPE_API_KEY": "sk-..."
+    "DASHSCOPE_API_KEY": "sk-你的API密钥"
   }
 }
 ```
 
-### 4. Use it
+**临时使用：**
+```bash
+# Windows PowerShell
+$env:DASHSCOPE_API_KEY="sk-你的API密钥"
+
+# Linux / macOS
+export DASHSCOPE_API_KEY=sk-你的API密钥
+```
+
+### 第四步：安装技能
+
+```bash
+git clone https://github.com/Dloading666/image-understand-skill.git ~/.claude/skills/image-understand
+```
+
+### 验证安装
+
+发送一张图片给 Claude Code，如果能正常返回图片描述，说明配置成功。
+
+## 使用方法
+
+### 单张图片
 
 ```bash
 python ~/.claude/skills/image-understand/scripts/understand_image.py \
-  --image ~/Desktop/photo.jpg \
-  --prompt "What's in this photo?"
+  --image "/path/to/image.png" \
+  --prompt "描述这张图片的内容"
 ```
 
-That's it. The tool will auto-detect which API key you have set and use the
-corresponding provider.
-
-## 📖 Usage
-
-### Basic
+### 多张图片对比
 
 ```bash
-python understand_image.py --image photo.jpg --prompt "描述这张图片"
+python ~/.claude/skills/image-understand/scripts/understand_image.py \
+  --image "/path/to/image1.jpg" \
+  --image "/path/to/image2.jpg" \
+  --prompt "对比这两张图片的区别"
 ```
 
-### Explicit provider
+### 网络图片
 
 ```bash
-python understand_image.py \
-  --provider anthropic \
-  --image screenshot.png \
-  --prompt "Describe what you see in this screenshot"
+python ~/.claude/skills/image-understand/scripts/understand_image.py \
+  --image "https://example.com/photo.jpg" \
+  --prompt "这张图片里有什么？"
 ```
 
-### Multi-image comparison
+### 参数说明
 
-```bash
-python understand_image.py \
-  --image mockup-v1.png \
-  --image mockup-v2.png \
-  --prompt "Compare these two designs in detail"
-```
+| 参数 | 必填 | 默认值 | 说明 |
+|------|------|--------|------|
+| `--image` | 是 | - | 图片路径或 URL，可多次指定 |
+| `--prompt` | 否 | `请描述这张图片的内容` | 对图片的提问或指令 |
+| `--model` | 否 | `qwen3.5-omni-flash` | 模型名称 |
+| `--max-tokens` | 否 | `4096` | 最大输出 token 数 |
+| `--temperature` | 否 | `0.7` | 采样温度 |
 
-### OCR
+### 可选模型
 
-```bash
-python understand_image.py \
-  --provider openai \
-  --model gpt-4o-mini \
-  --image scanned-document.jpg \
-  --prompt "Extract all text exactly as it appears, preserving formatting"
-```
+| 模型 | 说明 |
+|------|------|
+| `qwen3.5-omni-flash` | 默认，速度快 |
+| `qwen-vl-max` | 最强视觉理解能力 |
+| `qwen-vl-plus` | 性价比之选 |
 
-### List available providers
+## 提示词技巧
 
-```bash
-python understand_image.py --list-providers
-```
-
-### All parameters
-
-| Parameter | Required | Default | Description |
-|-----------|----------|---------|-------------|
-| `--image` | Yes | - | Image path or URL. Repeat for multiple images. |
-| `--prompt` | No | `请描述这张图片的内容` | Question or instruction about the image(s) |
-| `--provider` | No | auto-detect | `openai`, `anthropic`, `google`, `alibabacloud`, `ollama` |
-| `--model` | No | provider default | Override the model name |
-| `--max-tokens` | No | `4096` | Maximum output tokens |
-| `--temperature` | No | `0.7` | Sampling temperature |
-| `--show-provider` | No | off | Print provider + model used (to stderr) |
-| `--list-providers` | No | off | List all available providers and exit |
-
-## ⚙️ How Auto-Detection Works
-
-When `--provider` is not specified, the tool checks environment variables in
-this order and picks the first one that is set:
-
-1. `ANTHROPIC_API_KEY` → Anthropic Claude
-2. `OPENAI_API_KEY` → OpenAI
-3. `GOOGLE_API_KEY` → Google Gemini
-4. `DASHSCOPE_API_KEY` → Alibaba Cloud Qwen
-5. `OLLAMA_HOST` → Ollama (local)
-
-To override, pass `--provider` explicitly.
-
-## 🧩 Architecture
-
-```
-scripts/
-├── understand_image.py        # Entry point — CLI parsing, provider dispatch
-└── providers/
-    ├── __init__.py             # Base class, registry, image helpers
-    ├── openai_provider.py      # OpenAI GPT-4o
-    ├── anthropic_provider.py   # Anthropic Claude
-    ├── google_provider.py      # Google Gemini
-    ├── alibabacloud_provider.py # Alibaba Cloud Qwen
-    └── ollama_provider.py      # Ollama (local)
-```
-
-Adding a new provider is straightforward:
-
-1. Create `providers/your_provider.py`
-2. Subclass `BaseProvider`, implement `is_available()` and `analyze()`
-3. Decorate with `@BaseProvider.register`
-4. Import it in `understand_image.py`
-
-## 🔧 Tips
-
-| Goal | Suggestion |
-|------|------------|
-| Detailed scene description | Use a long prompt: *"Describe every object, its position, color, and relationship to other objects"* |
-| OCR / text extraction | *"Extract all text from this image exactly as it appears, preserving line breaks and formatting"* |
-| Screenshot analysis | *"Describe the UI layout, list all visible elements and their states"* |
-| Image comparison | *"Compare these images and list all differences in detail"* |
-| Debug which model runs | Pass `--show-provider` |
-| Truncated output | Increase `--max-tokens 8192` |
-
-## 📄 License
-
-MIT
+- **详细分析**：`"请详细描述图片中每个物体的位置、颜色和状态"`
+- **文字提取**：`"请提取图片中的所有文字，保持原有格式"`
+- **图片对比**：`"这两张图片有什么不同？"`
+- **场景识别**：`"这是在什么地方拍的？"`
