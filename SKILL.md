@@ -1,59 +1,99 @@
 ---
 name: image-understand
 description: >
-  Analyze and understand images using the Alibaba Cloud Qwen 3.5 Omni Flash vision model.
-  Use this skill whenever the user wants to: describe, analyze, or extract information from images;
-  understand what's in a screenshot, photo, diagram, or chart; compare multiple images;
-  read text from images (OCR); identify objects, people, or scenes in images;
-  or asks any question about visual content. Even if they don't explicitly say "image understanding"
-  or "Qwen", trigger this skill for any image analysis task. Supports local file paths and URLs.
-  Supports JPEG, PNG, GIF, WebP, BMP formats.
+  Multi-provider image understanding skill. Supports OpenAI GPT-4o, Anthropic
+  Claude 3.5 Sonnet, Google Gemini, Alibaba Cloud Qwen, and Ollama local models.
+  Use for: describing/analyzing images, OCR, screenshot analysis, photo recognition,
+  multi-image comparison, extracting information from diagrams/charts, identifying
+  objects/people/scenes. Accepts local file paths and URLs. Provider is auto-detected
+  from environment variables.
 ---
 
-# Image Understanding with Qwen 3.5 Omni Flash
+# image-understand — Multi-Provider Image Understanding
 
-This skill uses the Alibaba Cloud Qwen 3.5 Omni Flash multimodal model to analyze images and return detailed text descriptions. It works by running a Python script that calls the DashScope API (OpenAI-compatible endpoint), sending image data along with the user's question, and printing the model's response.
+Analyze images using **any** major vision model — automatically detects which provider's API key you have configured.
+
+Supported providers:
+
+| Provider | Env Variable | Default Model |
+|----------|-------------|---------------|
+| **OpenAI** | `OPENAI_API_KEY` | `gpt-4o` |
+| **Anthropic** | `ANTHROPIC_API_KEY` | `claude-3-5-sonnet-20241022` |
+| **Google Gemini** | `GOOGLE_API_KEY` | `gemini-1.5-flash` |
+| **Alibaba Cloud (Qwen)** | `DASHSCOPE_API_KEY` | `qwen3.5-omni-flash` |
+| **Ollama** (local) | `OLLAMA_HOST` | `llava` |
 
 ## Prerequisites
 
-Before using this skill, you **must** configure the API key:
-
-1. Get your DashScope API key from https://dashscope.console.aliyun.com/
-2. Set the environment variable `DASHSCOPE_API_KEY` with your key (starts with `sk-`):
-   - In your shell: `export DASHSCOPE_API_KEY=sk-your-key-here`
-   - Or add it to `~/.claude/settings.json` under `env`:
-     ```json
-     { "env": { "DASHSCOPE_API_KEY": "sk-your-key-here" } }
-     ```
-3. Install the Python dependency: `pip install openai`
-
-## How to Use
-
-Run the bundled script via Bash. The script accepts one or more image paths/URLs and a text prompt.
-
-### Single image
+### 1. Install Python dependency
 
 ```bash
-python ~/.claude/skills/image-understand/scripts/understand_image.py \
-  --image "/path/to/image.png" \
-  --prompt "Describe what you see in this image"
+pip install openai
 ```
 
-### Multiple images (comparison)
+For specific providers, additional packages may be needed:
+- **Anthropic**: `pip install anthropic`
+- **Google Gemini**: `pip install google-generativeai`
+- **Images from URLs**: `pip install httpx` (usually comes with `openai`)
 
-```bash
-python ~/.claude/skills/image-understand/scripts/understand_image.py \
-  --image "/path/to/image1.jpg" \
-  --image "/path/to/image2.jpg" \
-  --prompt "Compare these two images and describe the differences"
+### 2. Set at least one API key
+
+```json
+// ~/.claude/settings.json
+{
+  "env": {
+    "OPENAI_API_KEY": "sk-...",
+    "ANTHROPIC_API_KEY": "sk-ant-...",
+    "GOOGLE_API_KEY": "AIza...",
+    "DASHSCOPE_API_KEY": "sk-..."
+  }
+}
 ```
 
-### Image from URL
+Only one key is needed. The tool auto-detects which provider to use.
+
+## Usage
 
 ```bash
 python ~/.claude/skills/image-understand/scripts/understand_image.py \
-  --image "https://example.com/photo.jpg" \
-  --prompt "What is shown in this picture?"
+  --image "/path/to/photo.jpg" \
+  --prompt "描述这张图片"
+```
+
+### Provider selection
+
+Auto-detect (no `--provider` flag — first matching env var wins):
+
+```bash
+python understand_image.py --image photo.jpg --prompt "Describe this"
+```
+
+Explicit provider:
+
+```bash
+python understand_image.py --provider anthropic --image photo.jpg --prompt "Describe"
+```
+
+### Examples
+
+**OCR / text extraction:**
+```bash
+python understand_image.py --image scan.png --prompt "提取图片中所有文字，保持原始格式" --show-provider
+```
+
+**Multi-image comparison:**
+```bash
+python understand_image.py \
+  --image design-v1.png \
+  --image design-v2.png \
+  --prompt "Compare these two UI designs and list the differences"
+```
+
+**Custom model:**
+```bash
+python understand_image.py \
+  --provider openai --model gpt-4o-mini \
+  --image receipt.jpg --prompt "Extract all text from this receipt"
 ```
 
 ### Parameters
@@ -61,21 +101,26 @@ python ~/.claude/skills/image-understand/scripts/understand_image.py \
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
 | `--image` | Yes | - | Image path or URL. Repeat for multiple images. |
-| `--prompt` | No | "请描述这张图片的内容" | Your question or instruction about the image(s) |
-| `--model` | No | `qwen3.5-omni-flash` | Qwen model name |
-| `--max-tokens` | No | `4096` | Maximum output tokens. Increase for longer descriptions. |
+| `--prompt` | No | `请描述这张图片的内容` | Question or instruction about the image(s) |
+| `--provider` | No | auto-detect | One of: openai, anthropic, google, alibabacloud, ollama |
+| `--model` | No | provider default | Override the model name |
+| `--max-tokens` | No | `4096` | Maximum output tokens |
+| `--temperature` | No | `0.7` | Sampling temperature |
+| `--show-provider` | No | off | Print which provider/model was used (to stderr) |
+| `--list-providers` | No | off | List all available providers and exit |
 
 ## Workflow
 
-1. The user provides an image (file path or URL) and a question about it.
-2. Translate the user's intent into an appropriate `--prompt` in the language they're using. If they ask in Chinese, write the prompt in Chinese. If in English, use English.
-3. Run the script and capture the output.
-4. Present the model's response to the user. You may add context or formatting, but do not fabricate content the model did not return.
+1. User provides an image (local file path or URL) and optionally a question.
+2. Translate the user's intent into an appropriate `--prompt` in their language.
+3. The script auto-detects the provider or uses the one specified.
+4. Present the model's response to the user. Add context but do not fabricate content.
 
 ## Tips
 
-- For detailed analysis, use a longer prompt like "请详细描述这张图片中每个物体的位置、颜色和状态" or "Describe every detail you can see, including text, numbers, and layout."
-- For OCR tasks, prompt with "请提取图片中的所有文字" or "Extract all text from this image exactly as it appears."
-- If the output is truncated, increase `--max-tokens` (e.g., `--max-tokens 2048`).
-- The script prints errors to stderr. If the command fails, check that `DASHSCOPE_API_KEY` is set and valid.
-- Other available vision models: `qwen-vl-max` (strongest), `qwen-vl-plus` (cost-effective).
+- **Detailed analysis**: Use long prompts like `"请详细描述图片中每个物体的位置、颜色和状态"`
+- **OCR**: `"请提取图片中的所有文字，保持原有格式"`
+- **Comparison**: `"Compare the differences between these two images"`
+- **Truncated output**: Increase `--max-tokens` (e.g., `--max-tokens 8192`)
+- **Debug**: Use `--show-provider` to confirm which model is being called
+- **List available providers**: Use `--list-providers`
