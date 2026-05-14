@@ -1,6 +1,6 @@
 # image-understand-skill
 
-基于阿里云通义千问 Qwen 3.5 Omni Flash 视觉模型的 Claude Code 图片理解技能。
+基于阿里云通义千问视觉模型的 Claude Code 图片理解技能。
 
 ## 功能特性
 
@@ -10,21 +10,28 @@
 - 图片文字提取（OCR）
 - 多图对比分析
 
-## 环境准备
+## 快速开始
 
-### 1. 获取 API Key
+> **使用前必须完成以下配置，否则技能无法运行。**
 
-前往 [阿里云百炼控制台](https://dashscope.console.aliyun.com/) 创建 API Key（`sk-` 开头）。
+### 第一步：开通阿里云百炼服务
 
-### 2. 安装依赖
+1. 注册/登录 [阿里云](https://www.aliyun.com/) 账号
+2. 前往 [百炼控制台](https://dashscope.console.aliyun.com/) 开通模型服务
+3. 进入「API Key 管理」，创建一个 API Key（`sk-` 开头）
+4. 确保账户有可用额度（免费额度或付费额度均可）
+
+### 第二步：安装 Python 依赖
 
 ```bash
 pip install openai
 ```
 
-### 3. 配置环境变量
+### 第三步：配置 API Key
 
-在 `~/.claude/settings.json` 中添加：
+**方式一：写入 Claude Code 配置（推荐，永久生效）**
+
+编辑 `~/.claude/settings.json`，在 `env` 中添加：
 
 ```json
 {
@@ -34,11 +41,27 @@ pip install openai
 }
 ```
 
-或临时设置：
+**方式二：设置环境变量（临时生效）**
 
 ```bash
+# Linux / macOS
 export DASHSCOPE_API_KEY=sk-你的API密钥
+
+# Windows PowerShell
+$env:DASHSCOPE_API_KEY="sk-你的API密钥"
 ```
+
+### 第四步：安装技能到 Claude Code
+
+将本仓库克隆或复制到 `~/.claude/skills/` 目录：
+
+```bash
+git clone https://github.com/Dloading666/image-understand-skill.git ~/.claude/skills/image-understand
+```
+
+### 验证安装
+
+发送一张图片给 Claude Code，如果能正常返回图片描述，说明配置成功。
 
 ## 使用方法
 
@@ -83,10 +106,6 @@ python scripts/understand_image.py \
 | `qwen-vl-max` | 最强视觉理解能力 |
 | `qwen-vl-plus` | 性价比之选 |
 | `qwen3.5-omni-flash` | 默认模型，速度快 |
-
-## 安装到 Claude Code
-
-将 `image-understand` 文件夹复制到 `~/.claude/skills/` 目录即可。
 
 ## 提示词技巧
 
