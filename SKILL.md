@@ -78,6 +78,40 @@ python understand_image.py --model qwen-vl-max --image photo.jpg --prompt "详�
 | `qwen-vl-max` | Best vision understanding |
 | `qwen-vl-plus` | Cost-effective |
 
+## Quick Screenshot / Clipboard Workflow
+
+For users with non-multimodal models (e.g., DeepSeek), pasted images are not directly visible.
+The clipboard-to-analysis workflow solves this:
+
+1. **User**: Take a screenshot (Win+Shift+S or PrtSc) — image is now in clipboard
+2. **User**: Type "分析截图" (or any message) and submit
+3. **Auto**: UserPromptSubmit hook auto-saves clipboard to `~/.claude/screenshots/latest.png`
+4. **Claude**: Runs image-understand on `~/.claude/screenshots/latest.png`
+
+```bash
+# Manual save from clipboard (if hook didn't fire):
+python ~/.claude/scripts/save_screenshot.py
+
+# Analyze latest screenshot:
+python ~/.claude/skills/image-understand/scripts/understand_image.py \
+  --image ~/.claude/screenshots/latest.png \
+  --prompt "描述这张截图的内容"
+```
+
+**Hook setup** (in `~/.claude/settings.json`):
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "command": "python ~/.claude/scripts/save_screenshot.py 2>/dev/null"
+      }
+    ]
+  }
+}
+```
+
 ## Workflow
 
 1. User provides an image (file path or URL) and optionally a question.
